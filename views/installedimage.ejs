@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            <%= image_name %> View
+        </title>
+        <link rel="stylesheet" href="/static/style.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <div class="header">
+            <a class="title", href="/">Docker management</a>
+        </div>
+
+        <div class="main">
+            <a class="action-button" onclick="window.history.back();">Return</a>
+            <h2 class="main-title">Container:</h2>
+            <a class="action-button stop-button" onclick="confirmDelete();">Delete</a>
+            <% function getInfo(info){
+                if(info == null){ %>
+                    N/A
+                <%} else if(typeof info === "object" && info.length != undefined){ %>
+                    <ul>
+                        <% for(let i=0; i<info.length; i++){ %>
+                            <li><%= getInfo(info[i]) %></li>
+                        <% } %>
+                    </ul>
+                <% } else if(typeof info === "object"){ %>
+                    <div class="table-responsive">
+                        <table class="containers">
+                            <% for(key in info) {%>
+                                <tr>
+                                    <td class="table-name"><%= key %></td>
+                                    <td><%= getInfo(info[key]) %></td>
+                                </tr>
+                            <% } %>
+                        </table>
+                    </div>
+                <% } else{ %>
+                    <%= info %>
+                <% }
+            }%>
+
+            <div class="content active" id="info">
+                <h2>Details:</h2>
+                <div class="table-responsive">
+                    <table class="containers">
+                        <% for(let i=0; i<data.length; i++) {%>
+                            <tr>
+                                <td class="table-name"><%= data[i][0] %></td>
+                                <td><%= getInfo(data[i][1]) %></td>
+                            </tr>
+                        <% } %>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <script>
+            function confirmDelete(){
+                if(confirm("Do you want to delete this image?")){
+                    fetch("/api/imageremove/<%= image_name %>").then(res=>{
+                        res.text().then(resText=>{
+                            if(res.status != 200){
+                                alert(resText);
+                            }else{
+                                var message = "Deleted: \n";
+                                const resJson = JSON.parse(resText);
+                                for(let i=0; i<resJson.length; i++){
+                                    for(key in resJson[i]){
+                                        message += key + ": " + resJson[i][key] + "\n";
+                                    }
+                                }
+                                alert(message);
+                                window.location = "/images";
+                            }
+                        });
+                    });
+                }
+            }
+        </script>
+    </body>
+</html>

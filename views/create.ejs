@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            Container creation
+        </title>
+        <link rel="stylesheet" href="/static/style.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <div class="header">
+            <a class="title", href="/">Docker management</a>
+        </div>
+        <% function getParameter(parameter, id=""){
+            if(parameter.type == "string"){ %>
+                <input type="text" class="config input-small" placeholder="<%= parameter.name %>" id="<%= id %><%= parameter.name %>">
+            <% } else if(parameter.type == "number"){ %>
+                <input type="number" class="config input-small" placeholder="<%= parameter.name %>" id="<%= id %><%= parameter.name %>">
+            <% } else if(parameter.type == "boolean"){ %>
+                <input type="checkbox" class="switch-slider" id="<%= id %><%= parameter.name %>">
+                <label for="<%= id %><%= parameter.name %>" class="switch-label"></label>
+            <% } else if(parameter.type == "object"){ 
+                for(let i=0; i<parameter.object.length; i++){
+                    getParameter(parameter.object[i], id+parameter.name+".");
+                }
+            } else if(parameter.type == "select"){ %>
+                <select id="<%= id %><%= parameter.name %>" class="selector extrasmall" >
+                    <% for(let i=0; i<parameter.object.length; i++){ 
+                        if (typeof parameter.object[i] == "string"){ %>
+                            <option value="<%= parameter.object[i]  %>"><%= parameter.object[i] %></option>
+                        <% }else{ %>
+                            <option value="<%= parameter.object[i][1]  %>"><%= parameter.object[i][0] %></option>
+                        <%}
+                    } %>
+                </select>     
+        <% }
+        } %>
+        <div class="main">
+            <h2 class="main-title">Container creation:</h2>
+            <h2>Name:</h2>
+            <input class="input-small" id="containername" placeholder="Container name">
+            <h2>Image:</h2>
+            <div class="autocomplete">
+                <input id="imageSelector" class="input-small" type="text" autocomplete="off" placeholder="Image">
+            </div>
+            <h2>Ports:</h2>
+            <div id="ports">
+                <div class="small-container">
+                    <input class="input-extrasmall full-width" type="text" autocomplete="off" placeholder="Host port">
+                    <input class="input-extrasmall full-width" type="text" autocomplete="off" placeholder="Container port">
+                    <select class="selector extrasmall full-width">
+                        <option>tcp</option>
+                        <option>udp</option>
+                        <option>sctp</option>
+                    </select>
+                    <a class="action-button start-button small" onclick="createPortInput();">+</a>
+                </div>
+            </div>
+            <h2>Environment variables:</h2>
+            <div id="environment">
+                <div>
+                    <input class="input-small" type="text" autocomplete="off" placeholder="Environment variable">
+                    <a class="action-button start-button small" onclick="createEnvironmentInput();">+</a>
+                </div>
+            </div>
+            
+            <h2>Network mode:</h2>
+            <div>
+                <select class="selector" id="NetworkMode">
+                    <option>bridge</option>
+                    <option>host</option>
+                    <option>none</option>
+                    <option>Use container</option>
+                </select>
+                <input class="input-small" type="text" autocomplete="off" style="display:none;" id="NetworkModeCustom" placeholder="Id/name">
+            </div>
+
+            <h2>Entrypoint:</h2>
+            <div id="Entrypoint">
+                <div>
+                    <input class="input-small" type="text" autocomplete="off" placeholder="Entrypoint">
+                    <a class="action-button start-button small" onclick="createEntrypoint();">+</a>
+                </div>
+            </div>
+
+            <h2>Cmd:</h2>
+            <div id="Cmd">
+                <div>
+                    <input class="input-small" type="text" autocomplete="off" placeholder="Cmd">
+                    <a class="action-button start-button small" onclick="createCmd();">+</a>
+                </div>
+            </div>
+
+            <h2>Volume binds:</h2>
+            <div id="Binds">
+                <div>
+                    <input class="input-small" type="text" autocomplete="off" placeholder="Bind">
+                    <a class="action-button start-button small" onclick="createBinds();">+</a>
+                </div>
+            </div>
+
+            <h2>Configuration:</h2>
+            <table class="containers" id="configTable" style="margin-bottom: 20px;">
+                <% for(let i=0;i<parameters.length;i++){ %>
+                    <tr>
+                        <td><%= parameters[i].name %></td>
+                        <td><%= getParameter(parameters[i]) %></td>
+                    </tr>
+                <% } %>
+            </table>
+            
+
+            <a class="action-button" onclick="createContainer();">Create</a>
+        </div>
+        <script>
+            const HostConfigParameters = ["CpuShares","Memory","CgroupParent","BlkioWeight","BlkioWeightDevice", "BlkioDeviceReadBps", "BlkioDeviceWriteBps", "BlkioDeviceReadIOps", "BlkioDeviceWriteIOps", "CpuPeriod","CpuQuota","CpuRealtimePeriod","CpuRealtimeRuntime","CpusetCpus","CpusetMems","Devices", "DeviceCgroupRules","DiskQuota","KernelMemory","MemoryReservation","MemorySwap","MemorySwappiness","NanoCpus","OomKillDisable","Init","PidsLimit","Ulimits", "CpuCount","CpuPercent","IOMaximumIOps","IOMaximumBandwidth","Binds","ContainerIDFile","LogConfig", "NetworkMode","PortBindings", "RestartPolicy", "AutoRemove","VolumeDriver","VolumesFrom","Mounts", "CapAdd","CapDrop","Dns","DnsOptions","DnsSearch","ExtraHosts","GroupAdd","IpcMode","Cgroup","Links","OomScoreAdj","PidMode","Privileged","PublishAllPorts","ReadonlyRootfs","SecurityOpt","StorageOpt", "Tmpfs", "UTSMode","UsernsMode","ShmSize","Sysctls", "Runtime","ConsoleSize","Isolation"]
+            
+            function createContainer(){
+                var config = {}
+                function saveToConfig(id, value){
+                    var idSplit = id.split(".");
+                    var last = idSplit.pop();
+                    idSplit.reduce(function(p, k){
+                        return p[k] = p[k] || {};
+                    }, config)[last]=value;
+                }
+                config.name = document.getElementById("containername").value;
+                config.Image = document.getElementById("imageSelector").value;
+                const configTable = document.getElementById("configTable");
+                const configTableElements = configTable.getElementsByTagName("tr");
+                var elem;
+                for (let i=0; i<configTableElements.length; i++){
+                    elem = configTableElements[i].getElementsByTagName("td")[1];
+                    eChildren = elem.children;
+                    for(let x=0; x<eChildren.length; x++){
+                        if(eChildren[x].type == "text"){
+                            saveToConfig(eChildren[x].id, eChildren[x].value);
+                        } else if(eChildren[x].type == "number"){
+                            saveToConfig(eChildren[x].id, parseInt(eChildren[x].value));
+                        } else if(eChildren[x].type == "checkbox"){
+                            console.log(eChildren[x]);
+                            saveToConfig(eChildren[x].id, (eChildren[x].checked === "true"));
+                        } else if(eChildren[x].tagName == "SELECT"){
+                            saveToConfig(eChildren[x].id, eChildren[x].value);
+                        }
+                    }
+                }
+                const portsContainer = document.getElementById("ports");
+                const ports = portsContainer.getElementsByTagName("div");
+                config.HostConfig = {"PortBindings":{}}
+                var inputs;
+                var selector;
+                var hostPorts;
+                var portArray;
+                for(let i=0; i<ports.length; i++){
+                    inputs = ports[i].getElementsByTagName("input");
+                    selector = ports[i].getElementsByTagName("select")[0];
+                    if(inputs[0] == "" || inputs[1] == ""){
+                        continue;
+                    }
+                    hostPorts = inputs[0].value.split(",");
+                    portArray = [];
+                    for(let x=0; x<hostPorts.length; x++){
+                        portArray.push({"HostPort":hostPorts[x].replace(' ', '')});
+                    }
+                    config.HostConfig.PortBindings[inputs[1].value+"/"+selector.value] = portArray;
+                }
+
+                const environmentContainer = document.getElementById("environment");
+                const environment = environmentContainer.getElementsByTagName("div");
+                var inputs;
+                config.Env = []
+                for(let i=0; i<environment.length; i++){
+                    input = environment[i].getElementsByTagName("input")[0];
+                    if(input.value == ""){
+                        continue;
+                    }
+                    config.Env.push(input.value);
+                }
+
+                var networkModeElem = document.getElementById("NetworkMode");
+                var networkMode;
+                if(networkModeElem.value == "Use container"){
+                    networkMode = document.getElementById("NetworkModeCustom").value;
+                    if(networkMode == ""){
+                        alert("NetworkMode can't be none.");
+                        return;
+                    }
+                    networkMode = "container:"+networkMode;
+                }else{
+                    networkMode = networkModeElem.value;
+                }
+
+                const entrypoint = document.getElementById("Entrypoint");
+                const entrypointElems = entrypoint.getElementsByTagName("div");
+                var input;
+                config.Entrypoint = [];
+                for(let i=0; i<entrypointElems.length; i++){
+                    input = entrypointElems[i].getElementsByTagName("input")[0];
+                    if (input.value == ""){
+                        continue;
+                    }
+                    config.Entrypoint.push(input.value);
+                }
+
+                const cmd = document.getElementById("Cmd");
+                const cmdElems = cmd.getElementsByTagName("div");
+                var input;
+                config.Cmd = [];
+                for(let i=0; i<cmdElems.length; i++){
+                    input = cmdElems[i].getElementsByTagName("input")[0];
+                    if (input.value == ""){
+                        continue;
+                    }
+                    config.Cmd.push(input.value);
+                }
+
+                const binds = document.getElementById("Binds");
+                const bindsElems = cmd.getElementsByTagName("div");
+                var input;
+                config.Binds = [];
+                for(let i=0; i<bindsElems.length; i++){
+                    input = bindsElems[i].getElementsByTagName("input")[0];
+                    if (input.value == ""){
+                        continue;
+                    }
+                    config.Binds.push(input.value);
+                }
+
+                for(item in config){
+                    if(HostConfigParameters.includes(item)){
+                        config["HostConfig"][item] = config[item];
+                        delete config[item];
+                    }
+                }
+                for(item in config["HostConfig"]){
+                    if(config["HostConfig"][item] == "" || Number.isNaN(config["HostConfig"][item]) || config["HostConfig"][item] == undefined){
+                        delete config["HostConfig"][item];
+                    }
+                }
+
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "/create", true);
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.onreadystatechange = function(){
+                    if (this.readyState != 4) return;
+                    if (this.status == 200){
+                        window.location = "/edit/"+this.responseText;
+                    }else{
+                        alert(this.responseText);
+                    }
+                }
+                xhr.send(JSON.stringify({config:config}));
+            }
+
+            document.getElementById("NetworkMode").addEventListener("change", function(ev){
+                if(this.value == "Use container"){
+                    document.getElementById("NetworkModeCustom").style.display = "block";
+                }else{
+                    document.getElementById("NetworkModeCustom").style.display = "none";
+                }
+            });
+
+            function createEntrypoint(){
+                const elem = document.getElementById("Entrypoint");
+                var newDiv = document.createElement("div");
+                var newInput = document.createElement("input");
+                var newA = document.createElement("a");
+
+                newInput.className = "input-small";
+                newInput.type = "text";
+                newInput.autocomplete = "off";
+                newInput.placeholder = "Entrypoint";
+                newDiv.appendChild(newInput);
+
+                newA.className = "action-button stop-button small";
+                newA.innerHTML = "-";
+                newA.onclick = function(ev){
+                    ev.target.parentNode.remove(ev.target.parentNode);
+                }
+                newDiv.appendChild(newA);
+
+                elem.appendChild(newDiv);
+            }
+
+            function createCmd(){
+                const elem = document.getElementById("Cmd");
+                var newDiv = document.createElement("div");
+                var newInput = document.createElement("input");
+                var newA = document.createElement("a");
+
+                newInput.className = "input-small";
+                newInput.type = "text";
+                newInput.autocomplete = "off";
+                newInput.placeholder = "Cmd";
+                newDiv.appendChild(newInput);
+
+                newA.className = "action-button stop-button small";
+                newA.innerHTML = "-";
+                newA.onclick = function(ev){
+                    ev.target.parentNode.remove(ev.target.parentNode);
+                }
+                newDiv.appendChild(newA);
+
+                elem.appendChild(newDiv);
+            }
+
+            function createBinds(){
+                const elem = document.getElementById("Binds");
+                var newDiv = document.createElement("div");
+                var newInput = document.createElement("input");
+                var newA = document.createElement("a");
+
+                newInput.className = "input-small";
+                newInput.type = "text";
+                newInput.autocomplete = "off";
+                newInput.placeholder = "Bind";
+                newDiv.appendChild(newInput);
+
+                newA.className = "action-button stop-button small";
+                newA.innerHTML = "-";
+                newA.onclick = function(ev){
+                    ev.target.parentNode.remove(ev.target.parentNode);
+                }
+                newDiv.appendChild(newA);
+
+                elem.appendChild(newDiv);
+            }
+
+            function createPortInput(){
+                const elem = document.getElementById("ports");
+
+                var div = document.createElement("div");
+                var portHost = document.createElement("input");
+                portHost.className = "input-extrasmall";
+                portHost.type = "text";
+                portHost.autocomplete = "off";
+                portHost.placeholder = "Host port";
+                div.appendChild(portHost);
+
+                var portContainer = document.createElement("input");
+                portContainer.className = "input-extrasmall";
+                portContainer.type = "text";
+                portContainer.autocomplete = "off";
+                portContainer.placeholder = "Container port";
+                div.appendChild(portContainer);
+                
+                var selector = document.createElement("select");
+                selector.className = "selector extrasmall";
+                var option = document.createElement("option");
+                option.innerHTML = "tcp";
+                selector.appendChild(option);
+                option = document.createElement("option");
+                option.innerHTML = "udp";
+                selector.appendChild(option);
+                option = document.createElement("option");
+                option.innerHTML = "sctp"
+                selector.appendChild(option);
+                div.appendChild(selector);
+
+                var button = document.createElement("a");
+                button.className = "action-button stop-button small";
+                button.onclick = function(ev){
+                    ev.target.parentNode.remove(ev.target.parentNode);
+                };
+                button.innerHTML = "-";
+                div.appendChild(button);
+
+                elem.appendChild(div);
+            }
+
+            function createEnvironmentInput(){
+                const elem = document.getElementById("environment");
+
+                var div = document.createElement("div");
+                var environment = document.createElement("input");
+                environment.className = "input-small";
+                environment.type = "text";
+                environment.autocomplete = "off";
+                environment.placeholder = "Environment variable";
+                div.appendChild(environment);
+
+                var button = document.createElement("a");
+                button.className = "action-button stop-button small";
+                button.onclick = function(ev){
+                    ev.target.parentNode.remove(ev.target.parentNode);
+                };
+                button.innerHTML = "-";
+                div.appendChild(button);
+
+                elem.appendChild(div);
+            }
+
+            var images = []
+            function getImages(){
+                fetch('/api/listimagesname').then(res=>{
+                    res.json().then(resJson=>{
+                        if(resJson.type == "error"){
+                            alert(resJson.data);
+                        }else if (resJson.type == "message"){
+                            images = resJson.data;
+                        }
+                    })
+                });
+            }
+
+            autoComplete = document.getElementById("imageSelector")
+
+            function removeItems(){
+                let x = document.getElementsByClassName("autocomplete-items");
+                for (let i=0; i<x.length; i++){
+                    x[i].parentNode.removeChild(x[i]);
+                }
+            }
+
+            function addItems(node, id, val){
+                x = document.createElement("div");
+                x.setAttribute("id", id+"autocomplete-items")
+                x.setAttribute("class", "autocomplete-items");
+                node.appendChild(x);
+                for(let i=0; i<images.length;i++){
+                    if(images[i].substr(0,val.length).toLowerCase() != val.toLowerCase()){
+                        continue;
+                    }
+                    a = document.createElement("div");
+                    a.innerHTML = "<strong>"+images[i].substr(0,val.length)+"</strong>"+images[i].substr(val.length);
+                    a.innerHTML += "<input type='hidden' value='"+images[i]+"'>";
+                    a.addEventListener("click", function(e){
+                        autoComplete.value = this.getElementsByTagName("input")[0].value;
+                        removeItems();
+                    });
+                    x.append(a);
+                }                
+            }
+
+            var currentFocus;
+            autoComplete.addEventListener("input", function(e){
+                var val = this.value;
+                removeItems();
+                if(!val) return;
+                currentFocus = -1;
+                addItems(this.parentNode, this.id, val);
+            });
+
+            autoComplete.addEventListener("keydown", function(e){
+                x = document.getElementById(this.id+"autocomplete-items");
+                if (!x) return;
+                items = x.getElementsByTagName("div");
+                if (items.length == 0) return;
+                switch(e.keyCode){
+                    case 40:
+                        if(currentFocus === undefined){
+                            currentFocus = 0; 
+                        }else{
+                            currentFocus ++;
+                        }
+                        setActive(items);
+                        break;
+                    case 38:
+                        if(currentFocus === undefined){
+                            currentFocus = items.length-1; 
+                        }else{
+                            currentFocus --;
+                        }
+                        setActive(items);
+                        break;
+                    case 13:
+                        e.preventDefault();
+                        if(currentFocus>-1){
+                            if(x) items[currentFocus].click();
+                        } else{
+                            items[0].click();
+                        }
+                        break;
+                }
+            });
+
+            function removeActives(items){
+                for(let i=0; i<items.length; i++){
+                    items[i].classList.remove("autocomplete-selected");
+                }
+            }
+
+            function setActive(items){
+                if(!items) return;
+                removeActives(items);
+                if (currentFocus >= items.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = items.length + currentFocus;
+                items[currentFocus].classList.add("autocomplete-selected");
+            }
+
+            autoComplete.addEventListener("click", function(e){
+                currentFocus = undefined;
+                removeItems();
+                addItems(this.parentNode, this.id, this.value);
+            });
+
+            document.addEventListener("click", function(e){
+                if(e.target.id != "imageSelector"){
+                    removeItems(e.target);
+                }
+            });
+            window.onload = function(ev){
+                getImages();
+            }
+        </script>
+    </body>
+</html>

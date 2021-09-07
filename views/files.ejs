@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            <%= container_name %> View
+        </title>
+        <link rel="stylesheet" href="/static/style.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <div class="header">
+            <a class="title", href="/">Docker management</a>
+        </div>
+
+        <div class="main">
+            <a class="action-button" href="/">Return</a>
+            <h2 class="main-title"><%= container_name %> Files:</h2>
+            <a class="action-button info-button" href="/edit/<%= id %>/logs">View log</a>
+            <a class="action-button stop-button" onclick="confirmDelete();">Delete</a>
+            <pre id="status" class="code">Status</pre>
+            <div id="filesTableContainer" class="table-responsive" style="position: relative;">
+                <div style="margin: 5px;">
+                    <a class="action-button small" onclick="returnDirectory();">&#8592;</a>
+                    <a class="action-button small" onclick="loadFiles('update=true');">Update files</a>
+                    <a class="action-button small" onclick="downloadFile();">Download</a>
+                    <input type="file" class="action-button small" id="fileInput">
+                </div>
+                <table class="containers" id="filesTable">
+                    <tr>
+                        <th>Files</th>
+                    </tr>
+                </table>
+            </div>
+            <div id="fileContentContainer" style="display: none;">
+                <a class="action-button small" onclick="getFiles();">Return</a>
+                <a class="action-button small" onclick="saveFile();">Save</a>
+                <a class="action-button small" onclick="downloadFile();">Download</a>
+                <textarea class="image-content" id="fileContent"></textarea>
+            </div>
+        </div>
+        <script>
+            const filesTable = document.getElementById("filesTable");
+            const filesTableContainer= document.getElementById("filesTableContainer");
+            const fileContent = document.getElementById("fileContent");
+            const fileContentContainer = document.getElementById("fileContentContainer");
+            const fileInput = document.getElementById("fileInput");
+            const status = document.getElementById("status");
+            async function readAllChunks(reedableStream){
+                const reader = reedableStream.getReader();
+                let done, value;
+                while (!done){
+                    ({done, value} = await reader.read());
+                    if(!value) continue;
+                    var decoded = new TextDecoder().decode(value);
+                    var decodedJson = JSON.parse(decoded);
+                    status.innerHTML = decodedJson["type"] + ": " + decodedJson["info"];
+                }
+            }
+
+            var path = "/";
+            var filename = "";
+            function getFile(name){
+                filename = name;
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", "/api/file/<%= id %>?method=get", true);
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.onreadystatechange = function(ev){
+                    if(this.readyState != 4) return;
+                    if(this.status != 200) return alert(this.responseText);
+                    filesTableContainer.style.display = "none";
+                    fileContentContainer.style.display = "block";
+                    fileContent.innerHTML = this.responseText;
+                }
+                xhr.send(JSON.stringify({path:path+name}))
+            }
+
+            function saveFile(){
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", "/api/file/<%= id %>?method=save", true);
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.onreadystatechange = function(ev){
+                    if(this.readyState != 4) return;
+                    if(this.status != 200) return alert(this.responseText);
+                    const resJson = JSON.parse(this.responseText);
+                    status.innerHTML = resJson["type"] + ": " + resJson["info"];
+                }
+                xhr.send(JSON.stringify({path:path+filename, content:fileContent.value}))
+            }
+
+            function downloadFile(){
+                var fullPath = path;
+                if(filename) fullPath+=filename;
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "/api/file/<%= id %>?method=download", true);
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.onreadystatechange = function(ev){
+                    if(this.readyState != 4) return;
+                    if(this.status != 200) return alert(this.responseText);
+                    var blob = this.response;
+                    blob = new Blob([blob], {type:"application/x-tar"});
+                    var URL = window.URL || window.webkitURL;
+                    downloadURL = URL.createObjectURL(blob);
+                    var a = document.createElement("a");
+                    if(typeof a.download === "undefined"){
+                        window.location.href = downloadURL;
+                    }else{
+                        a.href = downloadURL;
+                        if(filename){
+                            a.download = filename+".tar";
+                        }else{
+                            a.download = fullPath.split("/").at(-2);
+                        }
+                        document.body.appendChild(a);
+                        a.click();
+                    }
+                }
+                xhr.send(JSON.stringify({path:fullPath}))
+            }
+
+            function upload(){
+                let files = fileInput.files
+                let formData = new FormData();
+                for(let i=0; i<files.length; i++){
+                    formData.append("content", files[i]);
+                }
+                
+                formData.append("path", path);
+                fetch("/api/file/<%= id %>?method=upload", {method:"POST", body:formData}).then(res=>{
+                    res.text().then(resText=>{
+                        if(res.status != 200) return alert(resText);
+                        resJson = JSON.parse(resText);
+                        status.innerHTML = resJson["type"] + ": " + resJson["info"];
+                        getFiles();
+                    });
+                });
+            }
+
+            fileInput.addEventListener("change", function(ev){
+                upload();
+            });
+
+            filesTableContainer.ondragenter = filesTableContainer.ondragover = function(ev){
+                ev.preventDefault();
+            }
+
+            filesTableContainer.ondrop = function(ev){
+                ev.preventDefault();
+                console.log("hola");
+                fileInput.files = ev.dataTransfer.files;
+                upload();
+            }
+
+            function getFiles(){
+                while(filesTable.rows.length > 1){
+                    filesTable.deleteRow(1);
+                }
+                fileContent.innerHTML = "";
+                filesTableContainer.style.display = "block";
+                fileContentContainer.style.display = "none";
+                filename = "";
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", "/api/listfiles/<%= id %>", true);
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.onreadystatechange = function(ev){
+                    if(this.readyState != 4) return;
+                    if(this.status != 200) return alert(this.responseText);
+                    const resJson = JSON.parse(this.responseText);
+                    var newRow;
+                    var newColumn;
+                    for(let i=0; i<resJson.length; i++){
+                        newRow = document.createElement("tr");
+                        newRow.className = "table-files-row";
+                        newColumn = document.createElement("td");
+                        newColumn.innerHTML = resJson[i][0];
+                        if(resJson[i][1]){
+                            newColumn.innerHTML = `
+                            <div class="folder-img">
+                                <img class="folder-img-back" src="/img/folderBack.svg">
+                                <img class="folder-img-front" src="/img/folderFront.svg">
+                            </div>
+                            ` + newColumn.innerHTML;
+                            newColumn.onclick = function(){
+                                path += resJson[i][0]+"/";
+                                getFiles();
+                            }
+                        }else{
+                            newColumn.innerHTML = `
+                            <div class="file-img">
+                                <img class="file-img-back" src="/img/fileBack.svg">
+                                <img class="file-img-pencil" src="/img/filePencil.svg">
+                            </div>
+                            ` + newColumn.innerHTML;
+                            newColumn.onclick = function(){
+                                getFile(resJson[i][0]);
+                            }
+                        }
+                        newRow.appendChild(newColumn);
+                        filesTable.appendChild(newRow);
+                    }
+                }
+                xhr.send(JSON.stringify({path:path}))
+            }
+            
+            function returnDirectory(){
+                path = path.split("/");
+                path.pop();
+                path.pop();
+                path = path.join("/")+"/";
+                getFiles();
+            }
+
+            function loadFiles(method=""){
+                if(method) method = "?"+method
+                fetch("/api/files/<%= id %>"+method).then(res=>{
+                    readAllChunks(res.body).then(()=>{
+                        getFiles(path);
+                    });
+                });
+            }
+            window.onload = function(){
+                loadFiles();
+            }
+        </script>
+    </body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            <%= container_id %> Logs
+        </title>
+        <link rel="stylesheet" href="/static/style.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <div class="header">
+            <a class="title", href="/">Docker management</a>
+        </div>
+
+        <div class="main">
+            <h2 class="main-title">Container logs:</h2>
+            <a class="action-button" href="/edit/<%= id %>">Return</a>
+            <a class="action-button start-button" onclick="getLogsFollowing()" id="followButton">Follow</a>
+            <code class="code" id="logElement">
+                Loading...
+            </code>
+        </div>
+
+        <script>
+            const logElement = document.getElementById("logElement");
+            function getLogs(){
+                let result = fetch("/api/logs/<%= id %>").then(res=>{
+                    return res;
+                });
+                return result;
+            }
+            window.onload = function(ev){
+                getLogs().then(res=>{
+                    res.text().then(resText=>{
+                        var result = [];
+                        resText = resText.split("\n");
+                        
+                        logElement.innerHTML = resText.join('<br/>');
+                        logElement.scrollTop = logElement.scrollHeight;
+                    });
+                });
+            }
+            
+            var controller = new AbortController();
+            var {signal} = controller;
+            var followButton = document.getElementById('followButton')
+            async function readAllChunks(reedableStream){
+                const reader = reedableStream.getReader();
+                let done, value;
+                while (!done){
+                    ({done, value} = await reader.read());
+                    if (!value){
+                        continue;
+                    }
+                    var decoded = new TextDecoder().decode(value);
+                    decoded = decoded.replace(/\n/g, '<br/>');
+                    logElement.innerHTML = logElement.innerHTML + decoded;
+                    logElement.scrollTop = logElement.scrollHeight;
+                }
+                followButton.classList.replace('stop-button', 'start-button');
+                location.reload();
+            }
+            var following = false;
+            function getLogsFollowing(){
+                if(following){
+                    controller.abort();
+                    followButton.classList.replace('stop-button', 'start-button');
+                    location.reload();
+                    following = false;
+                    return;
+                }
+                logElement.innerHTML = "";
+                following = true;
+                followButton.classList.replace('start-button', 'stop-button');
+                var fetching = fetch("/api/logs/<%= id %>?follow=true", {signal})
+                fetching.catch(reason=>{
+                    following = false;
+                });
+                fetching.then(res=>{
+                    readAllChunks(res.body).catch(reason=>{
+                        following = false;
+                    }).then({
+
+                    });
+                });
+            }
+        </script>
+    </body>
+</html>

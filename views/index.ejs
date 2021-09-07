@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            Docker management web
+        </title>
+        <link rel="stylesheet" href="/static/style.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <div class="header">
+            <a class="title", href="/">Docker management</a>
+        </div>
+
+        <div class="main">
+            <a class="action-button" href="/create">Create container</a>
+            <a class="action-button" href="/images">Manage images</a>
+            <h2 class="main-title">Running containers:</h2>
+            <% if(!all){ %>
+                <a class="action-button" href="/all">Show all containers</a>
+            <% } %>
+            <div class="table-responsive">
+                <table class="containers">
+                    <tr>
+                        <th>Action</th>
+                        <th>ID</th>
+                        <th>Names</th>
+                        <th>Image</th>
+                        <th>Ports</th>
+                        <th>Info</th>
+                    </tr>
+                    <% for(var i=0; i<containers.length; i++){ %>
+                        <tr>
+                            <td style="text-align: center;">
+                                <div>
+                                    <% if(containers[i].State == "started" || containers[i].State == "running"){ %>
+                                        <a class="action-button stop-button small" onclick="makeRequest('<%= containers[i].Id %>', 'stop')">Stop</a>
+                                    <% }else{ %>
+                                        <a class="action-button start-button small" onclick="makeRequest('<%= containers[i].Id %>', 'start')">Start</a>
+                                    <% } %>
+                                </div>
+                                <div style="margin-top: 10px;">
+                                    <a class="action-button small" href="/edit/<%= containers[i].Id %>">View/Edit</a>
+                                </div>
+                            </td>
+                            <td><%= containers[i].Id.substring(0, 12)%></td>
+                            <td><%= containers[i].Names %></td>
+                            <td><%= containers[i].Image %></td>
+                            <td>
+                                <ul>
+                                    <% for(var x=0; x<containers[i].Ports.length; x++){ %>
+                                        <li>
+                                            <%= `${containers[i].Ports[x].PublicPort||'N/A'}:${containers[i].Ports[x].PrivatePort} ${containers[i].Ports[x].Type}\n` %>
+                                        </li>
+                                    <% } %>
+                                </ul>
+                            </td>
+                            <td><%= containers[i].Status %></td>
+                        </tr>
+                    <% } %>
+                </table>
+            </div>
+        </div>
+        <script>
+            function makeRequest(id, method){
+                fetch("/edit/"+id+"?method="+method).then(res=>{
+                    res.text().then(resText=>{
+                        if (res.status == 200){
+                            setTimeout(()=>location.reload(), 1000);
+                        }else{
+                            alert(resText);
+                        }
+                    });
+                })
+            }
+        </script>
+    </body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            <%= container_name %> View
+        </title>
+        <link rel="stylesheet" href="/static/style.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <div class="header">
+            <a class="title", href="/">Docker management</a>
+        </div>
+
+        <div class="main">
+            <a class="action-button" href="/">Return</a>
+            <h2 class="main-title">Container:</h2>
+            <%
+                function getEditable(editable){
+                    if(editable[2] == "number"){ %>
+                        <input type="number" class="config input-small" id=<%= editable[3] %> value=<%= editable[1] %>>
+                    <% } else if(editable[2] == "string"){ %>
+                        <input type="text" class="config input-small" id=<%= editable[3] %> value=<%= editable[1] %>>
+                    <% } else if(editable[2] == "array"){ %>
+                        <select class="config selector" id=<%= editable[4] %>>
+                        <% for(let i=0; i<editable[3].length; i++){ %>
+                            <option <% if(editable[3][i] == editable[1]){ %> selected <% } %> value="<%= editable[3][i] %>" ><%= editable[3][i] %></option>
+                        <% } %>
+                        </select>
+                    <% }
+                } %>
+            
+            <% function getInfo(info){
+                if(info == null){ %>
+                    N/A
+                <%} else if(typeof info === "object"){ %>
+                    <ul class="list-without-style">
+                    <% for(let i=0; i<info.length; i++){ %>
+                        <li><%= info[i] %></li>
+                    <% } %>
+                    </ul>
+                <% } else{ %>
+                    <%= info %>
+                <% }
+            }%>
+
+            <% var button_color = "" %>
+            <% if(running){ %>
+                <% var text = "Stop"; %>
+                <% var button_class = 'stop-button'; %>
+            <% } else{ %>
+                <% var text = "Start"; %>
+                <% var button_class = 'start-button'; %>
+            <% } %>
+            <div style="line-height: 40px;">
+                <a class="action-button <%= button_class %>" onclick="makeRequest('<%= text.toLowerCase() %>');"><%= text %></a>
+                <% if(running){ %>
+                    <a class="action-button stop-button" onclick="makeRequest('kill');">Kill</a>
+                    <a class="action-button info-button" onclick="makeRequest('restart');">Restart</a>
+                    <a class="action-button info-button" href="/terminal/<%= id %>">Open terminal</a>
+                <% } %>
+                <a class="action-button info-button" href="/files/<%= id %>">Files</a>
+                <a class="action-button info-button" href="/logs/<%= id %>">View log</a>
+                <a class="action-button stop-button" onclick="confirmDelete();">Delete</a>
+            </div>
+            <div class="tabs">
+                <button class="tab-button active" onclick="changeTab(event, 'info')">Information</button>
+                <button class="tab-button" onclick="changeTab(event, 'config')">Configuration</button>
+            </div>
+            <div class="content active" id="info">
+                <h2>Details:</h2>
+                <div class="table-responsive">
+                    <table class="containers">
+                        <% for(let i=0; i<data.length; i++) {%>
+                            <tr>
+                                <td class="table-name"><%= data[i][0] %></td>
+                                <td><%= getInfo(data[i][1]) %></td>
+                            </tr>
+                        <% } %>
+                    </table>
+                </div>
+            </div>
+            <div class="content" id="config">
+                <h2>Configuration:</h2>
+                <a class="action-button" id="saveButton" style="display: none;" onclick="saveConfig();">Save</a>
+                <div class="table-responsive">
+                    <table class="containers">
+                        <% for(let i=0; i<editable.length; i++) {%>
+                            <tr>
+                                <td><%= editable[i][0] %></td>
+                                <td><%= getEditable(editable[i]) %></td>
+                            </tr>
+                        <% } %>
+                    </table>
+                </div>
+                
+            </div>
+        </div>
+        <script>
+            const saveButton = document.getElementById('saveButton');
+            var configChanges = {}
+            function onConfigChange(elem){
+                saveButton.style.display = 'inline';
+                if(elem.type == "number"){
+                    configChanges[elem.id] = parseInt(elem.value);
+                } else{
+                    configChanges[elem.id] = elem.value;
+                }
+            }
+            window.onload = function(ev){
+                const configInputs = document.getElementsByClassName('config');
+                for(let i=0; i<configInputs.length; i++){
+                    if(configInputs[i].tagName == "INPUT"){
+                        configInputs[i].addEventListener('input', function(ev){
+                            onConfigChange(this);
+                        });
+                    }else if(configInputs[i].tagName == "SELECT"){
+                        configInputs[i].addEventListener('change',function(ev){
+                            onConfigChange(this);
+                        });
+                    }
+                }
+            }
+
+            function saveConfig(){
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "/edit/<%= id %>?method=config", true);
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.onreadystatechange = function(){
+                    if(this.readyState != 4) return;
+                    if(this.status == 200){
+                        setTimeout(()=>location.reload(), 200);
+                    }else{
+                        alert(this.responseText);
+                    }
+                }
+                xhr.send(JSON.stringify({config:configChanges}));
+            }
+
+            function changeTab(ev, name){
+                let tabs = document.getElementsByClassName("content")
+                for(let i=0; i<tabs.length; i++){
+                    if(tabs[i].id == name){
+                        tabs[i].className += ' active';
+                    }else{
+                        tabs[i].className = tabs[i].className.replace(' active', '');
+                    }
+                }
+                let tabButtons = document.getElementsByClassName("tab-button")
+                for(let i=0; i<tabButtons.length; i++){
+                    tabButtons[i].className = tabButtons[i].className.replace(' active', '');
+                }
+                ev.target.classList.add('active');
+            }
+
+            function makeRequest(method){
+                fetch("/edit/<%= id %>?method="+method).then(res=>{
+                    res.text().then(resText=>{
+                        if (res.status == 200){
+                            setTimeout(()=>location.reload(), 200);
+                        }else{
+                            alert(resText);
+                        }
+                    });
+                });
+            }
+            function confirmDelete(){
+                if(confirm('Do you want to delete the container?')){
+                    makeRequest('delete');
+                }
+            }
+        </script>
+    </body>
+</html>

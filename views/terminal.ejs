@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            <%= container_name %> Terminal
+        </title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="/static/style.css">
+    </head>
+    <body>
+        <div class="header">
+            <a class="title", href="/">Docker management</a>
+        </div>
+
+        <div class="main">
+            <a class="action-button" onclick="history.back();">Return</a>
+            <h2 class="main-title">Terminal:</h2>
+            <div class="terminal" id="terminal-container" tabindex="0">
+                <pre id="terminal"></pre>
+            </div> 
+        </div>
+        <script>
+            const terminal = document.getElementById("terminal");
+            const msgCodes = {
+                start: 0,
+                stdin: 1,
+                stdout: 2,
+                stdoutError:3,
+                end: 4
+            }
+            var ws = new WebSocket("ws://"+window.location.hostname+":1234/terminal");
+            const terminalContainer = document.getElementById("terminal-container");
+            terminalContainer.addEventListener("keydown", function(ev){
+                //console.log(ev.key+": "+ev.keyCode);
+                ws.send(ev.key);
+            });
+
+            function manageMessage(msg){
+                switch(msg[0]){
+                    case msgCodes.stdout:
+                        terminal.innerHTML += msg[1];
+                        break;
+                    case msgCodes.stdoutError:
+                        terminal.innerHTML += "<span class='terminal-error'>"+msg[1]+"</span>";
+                        break;
+                    case msgCodes.end:
+                        terminal.innerHTML += "<span class='terminal-info'>"+msg[1]+"</span>";
+                        break;
+                }
+            }
+
+            ws.addEventListener("open", function(ev){
+                sendMessage("<%= container_id %>", msgCodes.start);
+            });
+            ws.addEventListener("message", function(msg){
+                var msgJson = JSON.parse(msg.data);
+                manageMessage(msgJson);
+            });
+            function sendMessage(message, code){
+                ws.send(JSON.stringify([code, message, "<%= container_id %>"]))
+            }
+        </script>
+    </body>
+</html>

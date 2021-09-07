@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            <%= image_name %>Image creation
+        </title>
+        <link rel="stylesheet" href="/static/style.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <div class="header">
+            <a class="title", href="/">Docker management</a>
+        </div>
+
+        <div id="buildModal" class="modal">
+            <div class="modal-content">
+                <div>
+                    <h2 class="no-width">Build:</h2>
+                    <span class="modal-close" onclick="closeBuildModal();">&times;</span>
+                </div>
+                <h2>Image tag</h2>
+                <input type="text" class="input-small" id="buildImageTag" placeholder="Image tag">
+                <h2>Log:</h2>
+                <pre class="code animated" id="buildLog" style="max-width: 100%;">Waiting...</pre>
+                <a class="action-button" onclick="makeRequest('build');">Build!</a>
+            </div>
+        </div>
+
+        <div class="main">
+            <a class="action-button" onclick="window.history.back();">Return</a>
+            <a class="action-button start-button" onclick="makeRequest('save')">Save</a>
+            <a class="action-button stop-button" onclick="confirmDelete();">Delete</a>
+            <a class="action-button info-button" onclick="openBuildModal();">Build</a>
+            <h2 class="main-title">Editing image "<%= image_name %>":</h2>
+            <textarea class="image-content" id="content"><%= content %></textarea>
+        </div>
+        <script>
+            function makeRequest(method){
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "/image/<%= image_name %>?method="+method, true);
+                xhr.setRequestHeader("Content-Type","application/json");
+                xhr.onreadystatechange = function(){
+                    if(this.readyState != 4) return;
+                    var buildLog = document.getElementById("buildLog");
+                    buildLog.innerHTML = "";
+                    try{
+                        var responseSplit = this.responseText.split("\n");
+                        var jsonLog;
+                        for(let i=0; i<responseSplit.length; i++){
+                            if(!responseSplit[i]) continue;
+                            jsonLog = JSON.parse(responseSplit[i]);
+                            for(key in jsonLog){
+                                if(typeof jsonLog[key] == "object"){
+                                    buildLog.innerHTML += JSON.stringify(jsonLog[key]);                            
+                                }else{
+                                    buildLog.innerHTML += jsonLog[key];
+                                }
+                            }
+                        }
+                    }catch{}
+                    
+                    if(this.status != 200){
+                        alert(this.responseText)
+                    }
+                }
+                if(method == "save"){
+                    xhr.send(JSON.stringify({content:document.getElementById("content").value}));
+                }else if(method == "build"){
+                    xhr.send(JSON.stringify({content: document.getElementById("content").value, imagetag:document.getElementById("buildImageTag").value}))
+                }else if(method == "delete"){
+                    xhr.send();
+                }
+            }
+
+            const buildModal = document.getElementById("buildModal");
+            function openBuildModal(){
+                buildModal.classList.add("active");
+            }
+            function closeBuildModal(){
+                buildModal.classList.remove("active");
+            }
+            window.onclick = function(ev){
+                if(ev.target == buildModal){
+                    closeBuildModal();
+                }
+            }
+            
+
+            function confirmDelete(){
+                if(confirm("Do you want to delete this image?")){
+                    makeRequest("delete");
+                }
+            }
+        </script>
+    </body>
+</html>

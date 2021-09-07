@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            Image creation
+        </title>
+        <link rel="stylesheet" href="/static/style.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <div class="header">
+            <a class="title", href="/">Docker management</a>
+        </div>
+
+        <div id="pullModal" class="modal">
+            <div class="modal-content">
+                <div>
+                    <h2 class="no-width">Pull:</h2>
+                    <span class="modal-close" onclick="closePullModal();">&times;</span>
+                </div>
+                <h2>Image tag</h2>
+                <input type="text" class="input-small" id="pullImageTag" placeholder="Image tag">
+                <h2>Log:</h2>
+                <pre class="code animated" id="pullLogContainer"><pre id="pullLog">Waiting...</pre></pre>
+                <a class="action-button" id="pullButton" onclick="pullImage();">Pull!</a>
+            </div>
+        </div>
+
+        <div class="main">
+            <a class="action-button" onclick="window.history.back();">Return</a>
+            <a class="action-button" onclick="createImage();">New image</a>
+            <a class="action-button" onclick="openPullModal();">Pull image</a>
+            <h2 class="main-title">Images:</h2>
+            <h2>Your images:</h2>
+            <div class="images">
+                <% for(var i=0; i<images.length; i++){ %>
+                    <div class="image" onclick="window.location='/image/<%= images[i] %>'">
+                        <%= images[i] %>
+                    </div>
+                <% } %>
+            </div>
+            <h2 class="no-width">Images:</h2>
+            <a class="action-button" onclick="getImages();">Reload</a>
+            <div class="images" id="installedImages">
+                
+            </div>
+        </div>
+        <script>
+            function createImage(){
+                const imageName = prompt("How do you want to call the file?");
+                if(!imageName){
+                    return alert("Image name can't be none");
+                }
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "/image/"+imageName+"?method=create", true);
+                xhr.onreadystatechange = function(){
+                    if(this.readyState != 4) return;
+                    if(this.status != 200){
+                        alert(this.responseText);
+                    }else{
+                        window.location = "image/"+imageName;
+                    }
+                }
+                xhr.send();
+            }
+
+            function getImages(){
+                const container = document.getElementById("installedImages");
+                container.innerHTML = "";
+                fetch("/api/listimages").then(res=>{
+                    if(res.status != 200){
+                        res.text().then(resText=>{
+                            return alert(resText);
+                        });
+                    }
+                    res.json().then(resJson=>{
+                        for(let i=0; i<resJson.length; i++){
+                            var newImage = document.createElement("DIV");
+                            newImage.className = "image"
+                            newImage.onclick = function(){
+                                window.location='/installedimage/'+resJson[i].Id;
+                            }
+                            if(!resJson[i].RepoTags){
+                                newImage.innerHTML = resJson[i].Id.substr(0,20);
+                            }else{
+                                newImage.innerHTML = resJson[i].RepoTags.join(" ");
+                            }
+                            container.appendChild(newImage);
+                        }
+                    });
+                });
+            }
+            const pullModal = document.getElementById("pullModal");
+            var pullLog = document.getElementById("pullLog");
+            const pullLogContainer = document.getElementById("pullLogContainer");
+            const pullButton = document.getElementById("pullButton");
+
+            function turnOnPullButton(){
+                pullButton.style.pointerEvents = "auto";
+                pullButton.classList.remove("disabled");
+            }
+            function turnOffPullButton(){
+                pullButton.style.pointerEvents = "none";
+                pullButton.classList.add("disabled");
+            }
+
+            async function readAllChunks(reedableStream){
+                const reader = reedableStream.getReader();
+                let done, value;
+                while (!done){
+                    ({done, value} = await reader.read());
+                    if (!value){
+                        continue;
+                    }
+                    var decoded = new TextDecoder().decode(value);
+                    var decodedSplit = decoded.split("\n");
+                    for(let i=0; i<decodedSplit.length; i++){
+                        if(!decodedSplit[i]) continue;
+                        try{
+                            var decodedJson = JSON.parse(decodedSplit[i]);
+                            if(decodedJson["id"]){
+                                var elem = document.getElementById("logID"+decodedJson["id"]);
+                                if(!elem){
+                                    elem = document.createElement("pre");
+                                    elem.id = "logID"+decodedJson["id"];
+                                    pullLogContainer.appendChild(elem);
+                                }
+                                elem.innerHTML = decodedJson["status"];
+                                if(decodedJson["progress"]){
+                                    elem.innerHTML += " " + decodedJson["progress"];
+                                }
+                            }else{
+                                pullLog.innerHTML += decodedJson["status"];
+                            }
+                        }catch{
+                            pullLogContainer.innerHTML += decodedSplit[i]+"\n";
+                        }
+                        
+                        pullLog.scrollTop = pullLog.scrollHeight;
+                    }
+                }
+                turnOnPullButton();
+            }
+
+            function pullImage(){
+                pullLogContainer.innerHTML = "";
+                pullLog = document.createElement("pre");
+                pullLog.id = "pullLog";
+                pullLogContainer.appendChild(pullLog);
+                turnOffPullButton();
+                var tag = document.getElementById("pullImageTag").value;
+                if(!tag) return alert("Tag name can't be none");
+                fetch("/api/pullimage?tag=" + tag).then(res=>{
+                    readAllChunks(res.body).then(()=>{
+                        turnOnPullButton();
+                    });
+                });
+            }
+
+            function openPullModal(){
+                pullModal.classList.add("active");
+                document.getElementById("pullImageTag").focus();
+            }
+            function closePullModal(){
+                pullModal.classList.remove("active");
+            }
+
+            document.getElementById("pullImageTag").onkeydown = function(ev){
+                if(ev.key == "Enter"){
+                    pullImage();
+                }
+            }
+
+            window.onclick = function(ev){
+                if(ev.target == pullModal){
+                    closePullModal();
+                }
+            }
+
+            window.onload = function(){
+                getImages();
+            }
+        </script>
+    </body>
+</html>

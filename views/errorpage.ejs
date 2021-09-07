@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            We have encountered an error
+        </title>
+        <link rel="stylesheet" href="/static/style.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <div class="header">
+            <a class="title", href="/">Docker management</a>
+        </div>
+        <div class="main">
+            <a class="action-button" onclick="window.history.back();">Return</a>
+            <h2 class="main-title">We have encountered an error:</h2>
+            <code class="code animated">
+                <%= error %>
+            </code>
+        </div>
+    </body>
+</html>
