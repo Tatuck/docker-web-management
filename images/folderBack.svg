@@ -1,0 +1,12 @@
+<svg width="300" height="221" viewBox="0 0 300 221" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Folder" clip-path="url(#clip0)">
+<path id="Back" opacity="0.7" d="M270 213H30C18.9543 213 10 204.046 10 193V52.7082V27C10 15.9543 18.9543 7 30 7H105.863C111.242 7 114.836 11.5278 116.986 16.4583C118.428 19.765 121.373 22.6774 127.5 23.9058H270C281.046 23.9058 290 32.8601 290 43.9058V193C290 204.046 281.046 213 270 213Z" fill="#B4B4B4"/>
+<g id="Front" opacity="0.75" filter="url(#filter0_d)">
+</g>
+</g>
+<defs>
+<clipPath id="clip0">
+<rect width="300" height="221" fill="white"/>
+</clipPath>
+</defs>
+</svg>

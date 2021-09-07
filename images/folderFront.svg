@@ -1,0 +1,22 @@
+<svg width="300" height="221" viewBox="0 0 300 221" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Folder" clip-path="url(#clip0)">
+<g id="Front" opacity="0.75" filter="url(#filter0_d)">
+<path d="M270 213H30C18.9543 213 10 204.046 10 193V52.7881C92.5 60.298 127.5 40.2715 127.5 24H270C281.046 24 290 32.9543 290 44V193C290 204.046 281.046 213 270 213Z" fill="#EDEDED"/>
+</g>
+</g>
+<defs>
+<filter id="filter0_d" x="0" y="14" width="300" height="209" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset/>
+<feGaussianBlur stdDeviation="5"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+</filter>
+<clipPath id="clip0">
+<rect width="300" height="221" fill="white"/>
+</clipPath>
+</defs>
+</svg>
