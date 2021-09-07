@@ -2,7 +2,7 @@
 <html>
     <head>
         <title>
-            <%= container_name %> View
+            <%= container_name %> Files
         </title>
         <link rel="stylesheet" href="/static/style.css">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,8 +15,6 @@
         <div class="main">
             <a class="action-button" href="/">Return</a>
             <h2 class="main-title"><%= container_name %> Files:</h2>
-            <a class="action-button info-button" href="/edit/<%= id %>/logs">View log</a>
-            <a class="action-button stop-button" onclick="confirmDelete();">Delete</a>
             <pre id="status" class="code">Status</pre>
             <div id="filesTableContainer" class="table-responsive" style="position: relative;">
                 <div style="margin: 5px;">

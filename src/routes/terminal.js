@@ -2,7 +2,6 @@ var express = require("express");
 var app = express.Router();
 const WebSocket = require("ws");
 const http = require("http");
-var WSStream = require("websocket-stream");
 
 app.get("/terminal/:id", function(req, res){
     const id = req.params.id;

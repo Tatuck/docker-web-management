@@ -1,8 +1,6 @@
 var express = require('express');
 var app = express.Router();
 
-var config = require('../config.json')
-
 const requestBody = [
     {
         "name":"Hostname",	
