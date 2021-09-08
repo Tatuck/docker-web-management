@@ -1,3 +1,4 @@
 {
+    "webpagePort":80,
     "websocketPort":1234
 }

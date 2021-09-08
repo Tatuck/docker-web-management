@@ -2,6 +2,7 @@ var express = require("express");
 var app = express();
 var multer = require("multer");
 var upload = multer();
+const config = require("./config.json");
 
 app.set('view engine', 'ejs');
 app.engine('html', require('ejs').renderFile);
@@ -43,4 +44,4 @@ process.on("unhandledRejection", function(err){
     console.log('Unhandled exception:', reason)
 })*/
 
-app.listen(80)
+app.listen(config.webpagePort);

@@ -2,6 +2,31 @@
 
 A website to control your Docker containers, images...
 
+# What can this program do?
+* Show your containers
+![containers](./images/index.png)
+* Edit your containers
+![containers edit](./images/containerEdit.png)
+![containers edit configuration](./images/containerEdit2.png)
+* Enter a terminal of a container
+![container terminal](./images/terminal.png)
+* View the logs of a container
+![container logs](./images/logs.png)
+* View the files of a container
+![container files](./images/files.png)
+* Create a new container
+![container creation](./images/containerCreation.png)
+![container creation 2](./images/containerCreation2.png)
+* Show your images
+![images](./images/images.png)
+* View any image
+![image view 1](./images/imageView1.png)
+![image view 2](./images/imageView2.png)
+* Create a new image
+![image creation](./images/imageCreation.png)
+* Pull an image
+![image pull](./images/imagePull.png)
+
 # Set-up
 1. ## **Install Node.JS and NPM:**
 ## Installation on Linux
@@ -70,32 +95,6 @@ You can find out which process is using a port with this command: <br>
 ```sh
 sudo lsof -i -P -n
 ```
-
-# What can this program do?
-* Show your containers
-![containers](./images/index.png)
-* Edit your containers
-![containers edit](./images/containerEdit.png)
-![containers edit configuration](./images/containerEdit2.png)
-* Enter a terminal of a container
-![container terminal](./images/terminal.png)
-* View the logs of a container
-![container logs](./images/logs.png)
-* View the files of a container
-![container files](./images/files.png)
-* Create a new container
-![container creation](./images/containerCreation.png)
-![container creation 2](./images/containerCreation2.png)
-* Show your images
-![images](./images/images.png)
-* View any image
-![image view 1](./images/imageView1.png)
-![image view 2](./images/imageView2.png)
-* Create a new image
-![image creation](./images/imageCreation.png)
-* Pull an image
-![image pull](./images/imagePull.png)
-
 
 # How can I help?
 You can help making pull requests, issues or contacting the developers.

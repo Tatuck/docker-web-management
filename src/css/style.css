@@ -237,7 +237,7 @@ th{
 h2{
     font-size: var(--font-size-medium);
     color: var(--text-color-normal);
-    margin-top: 2%;
+    margin-top: 1%;
     margin-bottom: 1%;
 }
 h2.no-width{
