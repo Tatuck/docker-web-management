@@ -2,6 +2,7 @@ var express = require("express");
 var app = express.Router();
 const WebSocket = require("ws");
 const http = require("http");
+const config = require("../config.json");
 
 app.get("/terminal/:id", function(req, res){
     const id = req.params.id;
@@ -126,7 +127,7 @@ function messageHandler(message, ws){
     }
 }
 
-server.listen(1234);
+server.listen(config.websocketPort);
 
 /*
 app.post("/terminal/:id", function(req, res){
