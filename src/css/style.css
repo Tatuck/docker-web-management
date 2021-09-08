@@ -450,7 +450,7 @@ div.terminal pre{
     padding: 5px;
     width: 100%;
     min-height: 400px;
-    color: #fff;
+    color: var(--input-color);
     font-size: var(--font-size-small);
     background-color: var(--input-bgcolor);
 }
