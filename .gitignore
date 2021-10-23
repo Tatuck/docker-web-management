@@ -1,3 +1,4 @@
 temp/
 dockerImages/
 node_modules/
+.vscode/

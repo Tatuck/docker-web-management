@@ -13,32 +13,37 @@ app.get('/edit/:id', function(req, res){
             case "start":
                 container.start(function(err, data){
                     if(err) return res.status(500).send(err);
+                    return res.send("done");
                 });
                 break;
             case "stop":
                 container.stop(function(err, data){
                     if(err) return res.status(500).send(err);
+                    return res.send("done");
                 });
                 break;
             case "kill":
                 container.kill(function(err, data){
                     if(err) return res.status(500).send(err);
+                    return res.send("done");
                 });
                 break;
             case "restart":
                 container.restart(function(err, data){
                     if(err) return res.status(500).send(err);
+                    return res.send("done");
                 });
                 break;
             case "delete":
                 container.kill(function(err, data){
                     container.remove(function(err, data){
                         if(err) return res.status(500).send(err);
+                        return res.send("done");
                     });
                 });
                 break;
         }
-        return res.send("done");
+        return;
     }
     container.inspect(function (err, data) {
         if(err){
